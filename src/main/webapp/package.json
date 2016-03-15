@@ -1,0 +1,22 @@
+{
+  "name": "yuMail",
+  "version": "0.0.0",
+  "description": "Bulk Mailer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuown/yuMail.git"
+  },
+  "author": "K3n",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yuown/yuMail/issues"
+  },
+  "homepage": "https://github.com/yuown/yuMail",
+  "devDependencies": {
+    "electron-prebuilt": "^0.36.0"
+  }
+}
