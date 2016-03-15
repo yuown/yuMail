@@ -1,4 +1,6 @@
-sdGuiAutoApp.controller('ConfigItemsController', [ '$scope', '$rootScope', 'AjaxService', '$location', '$controller', function($scope, $rootScope, AjaxService, $location, $controller) {
+require('../yuMailApp')
+
+yuMailApp.controller('ConfigItemsController', [ '$scope', '$rootScope', 'AjaxService', '$location', '$controller', function($scope, $rootScope, AjaxService, $location, $controller) {
     'use strict';
     
     $controller('BaseController', {
@@ -46,7 +48,7 @@ sdGuiAutoApp.controller('ConfigItemsController', [ '$scope', '$rootScope', 'Ajax
     
 } ]);
 
-sdGuiAutoApp.controller('ConfigItemController', [ '$scope', '$rootScope', 'AjaxService', '$controller', function($scope, $rootScope, AjaxService, $controller) {
+yuMailApp.controller('ConfigItemController', [ '$scope', '$rootScope', 'AjaxService', '$controller', function($scope, $rootScope, AjaxService, $controller) {
     'use strict';
     
     $controller('BaseController', {

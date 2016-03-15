@@ -17,9 +17,11 @@
   },
   "homepage": "https://github.com/yuown/yuMail",
   "devDependencies": {
+    "browserify": "^13.0.0",
     "electron-prebuilt": "^0.36.0",
     "gulp": "^3.9.1",
-    "node-sass": "^3.4.2"
+    "node-sass": "^3.4.2",
+    "vinyl-source-stream": "^1.1.0"
   },
   "dependencies": {
     "angular": "^1.5.0",
