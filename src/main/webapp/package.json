@@ -20,8 +20,12 @@
   "devDependencies": {
     "browserify": "^13.0.0",
     "electron-prebuilt": "^0.36.0",
+    "font-awesome": "^4.5.0",
     "gulp": "^3.9.1",
-    "gulp-ruby-sass": "^2.0.6",
+    "gulp-clean": "^0.3.2",
+    "gulp-cssimport": "^3.0.2",
+    "gulp-google-webfonts": "0.0.12",
+    "gulp-sass": "^2.2.0",
     "node-sass": "^3.4.2",
     "vinyl-source-stream": "^1.1.0"
   },
@@ -30,6 +34,7 @@
     "angular-cookies": "^1.5.0",
     "angular-material": "^1.0.6",
     "angular-route": "^1.5.0",
-    "angular-route-segment": "^1.5.1"
+    "angular-route-segment": "^1.5.1",
+    "material-design-icons": "^2.2.1"
   }
 }
