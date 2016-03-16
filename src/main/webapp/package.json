@@ -4,6 +4,7 @@
   "description": "Bulk Mailer",
   "main": "main.js",
   "scripts": {
+    "gulp": "gulp",
     "start": "electron main.js"
   },
   "repository": {
@@ -20,6 +21,7 @@
     "browserify": "^13.0.0",
     "electron-prebuilt": "^0.36.0",
     "gulp": "^3.9.1",
+    "gulp-ruby-sass": "^2.0.6",
     "node-sass": "^3.4.2",
     "vinyl-source-stream": "^1.1.0"
   },

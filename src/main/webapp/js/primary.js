@@ -1,4 +1,8 @@
 require('./yuMailApp')
+require('./services')
+require('./routeSegmentProvider')
+require('./httpProvider')
+require('./stateProvider')
 
 yuMailApp.controller('BaseController', [ '$scope', '$rootScope', 'AjaxService', '$mdDialog', '$location', function($scope, $rootScope, AjaxService, $mdDialog, $location) {
     'use strict';
