@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import yuown.bulk.entities.Configuration;
 import yuown.bulk.repository.ConfigurationRepository;
 
+import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.PostConstruct;
@@ -30,8 +31,8 @@ public class ConfigurationService extends AbstractServiceImpl<Integer, Configura
     }
 
     @Override
-    public Configuration save(Configuration resource) {
-        Configuration saved = super.save(resource);
+    public Configuration save(Configuration resource, HashMap<String, Object> customParams) {
+        Configuration saved = super.save(resource, customParams);
         if (null != saved.getAutoLoad() && saved.getAutoLoad()) {
             cacheConfigItem(saved.getName(), saved);
         } else {
@@ -70,7 +71,7 @@ public class ConfigurationService extends AbstractServiceImpl<Integer, Configura
             if (fromDb != null) {
                 returnValue = fromDb.getValue().intValue();
                 fromDb.setAutoLoad(true);
-                save(fromDb);
+                save(fromDb, null);
             }
         } catch (Exception e) {
             e.printStackTrace();

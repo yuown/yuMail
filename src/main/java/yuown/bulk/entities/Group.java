@@ -17,18 +17,15 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "contacts", uniqueConstraints = @UniqueConstraint(columnNames = { "id" }))
+@Table(name = "groups", uniqueConstraints = @UniqueConstraint(columnNames = { "id" }))
 @AttributeOverrides(value = {
         @AttributeOverride(name = "id", column = @Column(name = "id", insertable = false, updatable = false)),
-        @AttributeOverride(name = "name", column = @Column(name = "name")),
-        @AttributeOverride(name = "email", column = @Column(name = "email"))
+        @AttributeOverride(name = "name", column = @Column(name = "name"))
 })
-public class Contact extends BaseEntity<Integer> {
+public class Group extends BaseEntity<Integer> {
 
     private String name;
-    private String email;
-    private String reserved;
-    private List<Group> groups = new ArrayList<Group>();
+    private List<Contact> contacts = new ArrayList<Contact>();
 
     public String getName() {
         return name;
@@ -36,14 +33,6 @@ public class Contact extends BaseEntity<Integer> {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     @Override
@@ -58,31 +47,23 @@ public class Contact extends BaseEntity<Integer> {
         this.id = id;
     }
 
-    public String getReserved() {
-        return reserved;
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    public List<Contact> getContacts() {
+        return contacts;
     }
 
-    public void setReserved(String reserved) {
-        this.reserved = reserved;
+    public void setContacts(List<Contact> contacts) {
+        this.contacts = contacts;
     }
     
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "contacts")
-    public List<Group> getGroups() {
-        return groups;
-    }
-
-    public void setGroups(List<Group> groups) {
-        this.groups = groups;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         return result;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -91,7 +72,7 @@ public class Contact extends BaseEntity<Integer> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Contact other = (Contact) obj;
+        Group other = (Group) obj;
         if (id == null) {
             if (other.id != null)
                 return false;
@@ -99,4 +80,5 @@ public class Contact extends BaseEntity<Integer> {
             return false;
         return true;
     }
+
 }
