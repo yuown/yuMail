@@ -36,6 +36,7 @@ public abstract class AbstractResourceImpl<ID extends Serializable, E extends Ba
             responseStatus = HttpStatus.OK;
         } catch (Exception e) {
             responseStatus = HttpStatus.BAD_REQUEST;
+            e.printStackTrace();
         }
         return new ResponseEntity<E>(entity, headers, responseStatus);
     }
