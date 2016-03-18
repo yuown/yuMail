@@ -1,5 +1,9 @@
 package yuown.bulk.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,11 +27,14 @@ import javax.persistence.UniqueConstraint;
         @AttributeOverride(name = "name", column = @Column(name = "name")),
         @AttributeOverride(name = "email", column = @Column(name = "email"))
 })
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 public class Contact extends BaseEntity<Integer> {
 
     private String name;
     private String email;
     private String reserved;
+    
+    @JsonBackReference
     private List<Group> groups = new ArrayList<Group>();
 
     public String getName() {

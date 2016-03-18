@@ -1,8 +1,7 @@
 package yuown.bulk.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -15,55 +14,104 @@ import yuown.bulk.model.IdValueModel;
 import yuown.bulk.repository.ContactRepository;
 import yuown.bulk.repository.GroupRepository;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 @Service
 @Scope(BeanDefinition.SCOPE_PROTOTYPE)
 public class ContactService extends AbstractServiceImpl<Integer, Contact, ContactRepository> {
 
-	@Autowired
-	private ContactRepository contactRepository;
+    @Autowired
+    private ContactRepository contactRepository;
 
-	@Autowired
-	private GroupRepository groupRepository;
+    @Autowired
+    private GroupRepository groupRepository;
 
-	public Contact getByName(String name) {
-		return repository().findByName(name);
-	}
+    @Autowired
+    private GroupService groupService;
 
-	@Override
-	public ContactRepository repository() {
-		return contactRepository;
-	}
+    public Contact getByName(String name) {
+        return repository().findByName(name);
+    }
 
-	@Override
-	public Contact save(Contact contact, HashMap<String, Object> customParams) {
-		ObjectMapper mapper = new ObjectMapper();
+    @Override
+    public ContactRepository repository() {
+        return contactRepository;
+    }
 
-		List<IdValueModel> contactGroups = new ArrayList<IdValueModel>();
-		try {
-			Object params = customParams.get("customparams");
-			if (null != params) {
-				contactGroups = mapper.readValue(params.toString(), new TypeReference<List<IdValueModel>>() {
-				});
-			}
-		} catch (Exception e1) {
-			e1.printStackTrace();
-		}
+    @Override
+    public Contact save(Contact contact, HashMap<String, Object> customParams) {
+        ObjectMapper mapper = new ObjectMapper();
 
-		if (null != contactGroups && contactGroups.size() > 0) {
-			for (IdValueModel groupId : contactGroups) {
-				Group e = groupRepository.findOne(groupId.getId());
-				if (e != null) {
-					if(null == contact.getGroups()) {
-						contact.setGroups(new ArrayList<Group>());
-					}
-					contact.getGroups().add(e);
-					groupRepository.save(e);
-				}
-			}
-		}
-		return repository().save(contact);
-	}
+        List<IdValueModel> contactGroups = new ArrayList<IdValueModel>();
+        try {
+            Object params = customParams.get("customparams");
+            if (null != params) {
+                contactGroups = mapper.readValue(params.toString(), new TypeReference<List<IdValueModel>>() {
+                });
+            }
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+
+        Contact fromDb = new Contact();
+        if (contact.getId() != null) {
+            fromDb = repository().findById(contact.getId());
+        }
+        fromDb.setEmail(contact.getEmail());
+        fromDb.setEnabled(contact.isEnabled());
+        fromDb.setName(contact.getName());
+
+        if (null != contactGroups && contactGroups.size() > 0) {
+            for (IdValueModel groupId : contactGroups) {
+                Group e = groupRepository.findOne(groupId.getId());
+                if (e != null) {
+                    if (!fromDb.getGroups().contains(e)) {
+                        fromDb.getGroups().add(e);
+                        e.getContacts().add(fromDb);
+                        groupRepository.save(e);
+                    }
+                }
+            }
+        }
+        return repository().save(fromDb);
+    }
+
+    public List<Group> getContactGroups(Integer contactId) {
+        List<Group> groups = new ArrayList<Group>();
+        if (contactId != null) {
+            Contact contact = repository().findById(contactId);
+            if (contact != null) {
+                groups.addAll(contact.getGroups());
+            }
+        }
+        return groups;
+    }
+
+    public void removeContactFromGroup(Integer contactId, Integer groupId) {
+        List<Group> groups = null;
+        if (contactId != null) {
+            Contact contact = repository().findById(contactId);
+            if (contact != null) {
+                groups = contact.getGroups();
+                Group assignedGroup = isGroupAssigned(groups, groupId);
+                if (assignedGroup != null) {
+                    groups.remove(assignedGroup);
+                    assignedGroup.getContacts().remove(contact);
+                    repository().save(contact);
+                    groupRepository.save(assignedGroup);
+                }
+            }
+        }
+    }
+
+    private Group isGroupAssigned(List<Group> groups, Integer groupId) {
+        for (Group group : groups) {
+            if (group.getId() == groupId) {
+                return group;
+            }
+        }
+        return null;
+    }
 }
