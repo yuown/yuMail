@@ -38,4 +38,10 @@ public class ContactResourceImpl extends AbstractResourceImpl<Integer, Contact, 
     public void removeContactFromGroup(@PathVariable(value = "id") Integer contactId, @PathVariable(value = "groupId") Integer groupId) {
         getService().removeContactFromGroup(contactId, groupId);
     }
+    
+    @RequestMapping(method = RequestMethod.GET, value = "/byGroup/{id}")
+    @ResponseBody
+    public List<Contact> getContactsByGroup(@PathVariable(value = "id") Integer groupId) {
+        return getService().getContactsByGroup(groupId);
+    }
 }

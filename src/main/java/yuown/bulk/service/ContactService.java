@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import yuown.bulk.entities.Contact;
 import yuown.bulk.entities.Group;
@@ -104,6 +105,17 @@ public class ContactService extends AbstractServiceImpl<Integer, Contact, Contac
                 }
             }
         }
+    }
+    
+    public List<Contact> getContactsByGroup(Integer groupId) {
+    	List<Contact> byGroup = new ArrayList<Contact>();
+    	if(null != groupId) {
+    		Group group = groupRepository.findById(groupId);
+    		if(null != group) {
+    			byGroup.addAll(repository().findAllByGroups(group));
+    		}
+    	}
+    	return byGroup;
     }
 
     private Group isGroupAssigned(List<Group> groups, Integer groupId) {

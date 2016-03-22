@@ -2,6 +2,7 @@ package yuown.bulk.entities;
 
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
+import javax.persistence.Basic;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -20,7 +21,6 @@ import javax.persistence.UniqueConstraint;
 })
 public class Template extends BaseEntity<Integer> {
 
-    @Lob
     private String content;
     
     private String name;
@@ -45,6 +45,7 @@ public class Template extends BaseEntity<Integer> {
         this.name = name;
     }
 
+    @Lob
     public String getContent() {
         return content;
     }
@@ -69,7 +70,7 @@ public class Template extends BaseEntity<Integer> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Contact other = (Contact) obj;
+        Template other = (Template) obj;
         if (id == null) {
             if (other.id != null)
                 return false;
