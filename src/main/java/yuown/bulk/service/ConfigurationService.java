@@ -2,6 +2,7 @@ package yuown.bulk.service;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -21,17 +22,100 @@ public class ConfigurationService extends AbstractServiceImpl<Integer, Configura
     @Autowired
     private ConfigurationRepository configurationRepository;
 
+    @Value("${page.size}")
+    private Integer pageSize;
+
+    @Value("${mail.smtp.host}")
+    private String mailHost;
+
+    @Value("${mail.auth.required}")
+    private Boolean mailAuthRequired;
+
+    @Value("${mail.user.name}")
+    private String mailUsername;
+
+    @Value("${mail.user.pass}")
+    private String mailPassword;
+
+    @Value("${mail.message.from.default}")
+    private String messageFromDefault;
+
+    @Value("${mail.smtp.starttls.enable}")
+    private Boolean enableTls;
+
+    @Value("${mail.smtp.port}")
+    private Integer smtpPort;
+
+    @Value("${mail.reply.to}")
+    private String mailReplyTo;
+
     public Configuration getByName(String name) {
         return repository().findByName(name);
     }
 
     @PostConstruct
     public void init() {
+        addConfigItemIfNotFound("page.size");
+        addConfigItemIfNotFound("mail.smtp.host");
+        addConfigItemIfNotFound("mail.auth.required");
+        addConfigItemIfNotFound("mail.user.name");
+        addConfigItemIfNotFound("mail.user.pass");
+        addConfigItemIfNotFound("mail.message.from.default");
+        addConfigItemIfNotFound("mail.smtp.starttls.enable");
+        addConfigItemIfNotFound("mail.smtp.port");
+        addConfigItemIfNotFound("mail.reply.to");
+
         cacheConfigItems();
     }
 
+    private void addConfigItemIfNotFound(String configName) {
+        Configuration item = getByName(configName);
+        if (null == item) {
+            item = new Configuration();
+            item.setName(configName);
+            item.setDeletable(false);
+            item.setAutoLoad(true);
+            switch (configName) {
+            case "page.size":
+                item.setValue(pageSize);
+                break;
+            case "mail.smtp.host":
+                item.setStrValue(mailHost);
+                break;
+            case "mail.auth.required":
+                item.setBoolValue(mailAuthRequired);
+                break;
+            case "mail.user.name":
+                item.setStrValue(mailUsername);
+                break;
+            case "mail.user.pass":
+                item.setStrValue(mailPassword);
+                break;
+            case "mail.message.from.default":
+                item.setStrValue(messageFromDefault);
+                break;
+            case "mail.smtp.starttls.enable":
+                item.setBoolValue(enableTls);
+                break;
+            case "mail.smtp.port":
+                item.setValue(smtpPort);
+                break;
+            case "mail.reply.to":
+                item.setStrValue(mailReplyTo);
+                break;
+            default:
+                break;
+            }
+            repository().save(item);
+        }
+    }
+
     @Override
-    public Configuration save(Configuration resource, HashMap<String, Object> customParams) {
+    public Configuration save(Configuration resource, HashMap<String, Object> customParams) throws Exception {
+        Configuration newC = getByName(resource.getName());
+        if (newC != null && resource.getId() == null) {
+            throw new Exception("Configuration Item with name '" + resource.getName() + "' already exists");
+        }
         Configuration saved = super.save(resource, customParams);
         if (null != saved.getAutoLoad() && saved.getAutoLoad()) {
             cacheConfigItem(saved.getName(), saved);
@@ -50,6 +134,9 @@ public class ConfigurationService extends AbstractServiceImpl<Integer, Configura
 
                 if (StringUtils.isNotBlank(valueModel.getStrValue())) {
                     System.setProperty(name, valueModel.getStrValue());
+                }
+                if (valueModel.getBoolValue() != null) {
+                    System.setProperty(name, valueModel.getBoolValue().toString());
                 }
             } catch (Exception e) {
                 e.printStackTrace();

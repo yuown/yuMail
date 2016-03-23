@@ -73,7 +73,7 @@ public class Contact extends BaseEntity<Integer> {
         this.reserved = reserved;
     }
     
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy = "contacts")
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "contacts")
     public List<Group> getGroups() {
         return groups;
     }

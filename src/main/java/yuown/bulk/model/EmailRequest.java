@@ -17,6 +17,8 @@ public class EmailRequest implements Serializable {
     private String content;
 
     private List<String> attachments;
+    
+    private String subject;
 
     public List<Contact> getSelectedContacts() {
         return selectedContacts;
@@ -40,5 +42,13 @@ public class EmailRequest implements Serializable {
 
     public void setAttachments(List<String> attachments) {
         this.attachments = attachments;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
     }
 }

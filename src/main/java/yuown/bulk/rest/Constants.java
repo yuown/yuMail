@@ -12,6 +12,6 @@ public interface Constants {
 
     public static final String SCREENSHOTS_BASE_PATH = "screenshots.base.path";
 
-    public static final String PAGE_SIZE = "page_size";
+    public static final String PAGE_SIZE = "page.size";
 
 }

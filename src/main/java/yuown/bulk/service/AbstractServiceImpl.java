@@ -18,7 +18,7 @@ public abstract class AbstractServiceImpl<ID extends Serializable, E extends Bas
 
     public abstract R repository();
 
-    public E save(E entity, HashMap<String, Object> customParams) {
+    public E save(E entity, HashMap<String, Object> customParams) throws Exception {
         return repository().save(entity);
     }
 

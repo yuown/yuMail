@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 
 import yuown.bulk.entities.Contact;
 import yuown.bulk.entities.Group;
@@ -71,7 +70,6 @@ public class ContactService extends AbstractServiceImpl<Integer, Contact, Contac
                     if (!fromDb.getGroups().contains(e)) {
                         fromDb.getGroups().add(e);
                         e.getContacts().add(fromDb);
-                        groupRepository.save(e);
                     }
                 }
             }
@@ -101,21 +99,32 @@ public class ContactService extends AbstractServiceImpl<Integer, Contact, Contac
                     groups.remove(assignedGroup);
                     assignedGroup.getContacts().remove(contact);
                     repository().save(contact);
-                    groupRepository.save(assignedGroup);
                 }
             }
         }
     }
-    
+
     public List<Contact> getContactsByGroup(Integer groupId) {
-    	List<Contact> byGroup = new ArrayList<Contact>();
-    	if(null != groupId) {
-    		Group group = groupRepository.findById(groupId);
-    		if(null != group) {
-    			byGroup.addAll(repository().findAllByGroups(group));
-    		}
-    	}
-    	return byGroup;
+        List<Contact> byGroup = new ArrayList<Contact>();
+        if (null != groupId) {
+            Group group = groupRepository.findById(groupId);
+            if (null != group) {
+                byGroup.addAll(repository().findAllByGroups(group));
+            }
+        }
+        return byGroup;
+    }
+
+    @Override
+    public void delete(Contact entity) {
+        Contact contact = repository().findById(entity.getId());
+        if (null != contact) {
+            List<Group> groups = contact.getGroups();
+            for (Group group : groups) {
+                group.getContacts().remove(contact);
+            }
+            repository().delete(contact);
+        }
     }
 
     private Group isGroupAssigned(List<Group> groups, Integer groupId) {
