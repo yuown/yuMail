@@ -1,6 +1,22 @@
 package yuown.bulk.service;
 
-import org.apache.commons.lang3.StringUtils;
+import java.io.StringWriter;
+import java.util.Properties;
+
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.annotation.PostConstruct;
+import javax.mail.BodyPart;
+import javax.mail.Message.RecipientType;
+import javax.mail.Multipart;
+import javax.mail.PasswordAuthentication;
+import javax.mail.Session;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
+import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
+
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
@@ -11,109 +27,127 @@ import org.apache.velocity.runtime.resource.util.StringResourceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
 
 import yuown.bulk.entities.Contact;
 import yuown.bulk.model.EmailRequest;
 
-import java.io.StringWriter;
-
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
-import javax.annotation.PostConstruct;
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Multipart;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-
 @Service
 public class MailSenderHelper {
 
-    @Autowired
-    private JavaMailSender javaMailService;
+	@Autowired
+	private JavaMailSenderImpl javaMailService;
 
-    @Autowired
-    private VelocityEngine velocityEngine;
-    
-    @Autowired
-    private ConfigurationService configurationService;
+	@Autowired
+	private VelocityEngine velocityEngine;
 
-    private String fromEmailAddress;
+	@Autowired
+	private ConfigurationService configurationService;
 
-    private VelocityEngine engine;
+	private String fromEmailAddress;
 
-    private static final String TEXT_HTML = "text/html; charset=utf-8";
+	private VelocityEngine engine;
 
-    private static Logger LOGGER = LoggerFactory.getLogger(MailSenderHelper.class);
+	private static final String TEXT_HTML = "text/html; charset=utf-8";
 
-    @PostConstruct
-    public void init() {
-        engine = new VelocityEngine();
-        engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.Log4JLogChute");
-        engine.setProperty("runtime.log.logsystem.log4j.logger", LOGGER.getName());
-        engine.setProperty(Velocity.RESOURCE_LOADER, "string");
-        engine.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
-        engine.addProperty("string.resource.loader.repository.static", "false");
-        //  engine.addProperty("string.resource.loader.modificationCheckInterval", "1");
-        engine.init();
-    }
+	private static Logger LOGGER = LoggerFactory.getLogger(MailSenderHelper.class);
 
-    public void sendMail(final EmailRequest request) {
-        fromEmailAddress = configurationService.getByName("mail.message.from.default").getStrValue();
-        
-        StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
-        repo.putStringResource("template", request.getContent());
-        try {
-            for (final Contact eachContact : request.getSelectedContacts()) {
-                MimeMessage message = javaMailService.createMimeMessage();
-                message.setFrom(fromEmailAddress);
-                addRecipients(eachContact, message, Message.RecipientType.TO, "TO");
+	@PostConstruct
+	public void init() {
+		engine = new VelocityEngine();
+		engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM_CLASS, "org.apache.velocity.runtime.log.Log4JLogChute");
+		engine.setProperty("runtime.log.logsystem.log4j.logger", LOGGER.getName());
+		engine.setProperty(Velocity.RESOURCE_LOADER, "string");
+		engine.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
+		engine.addProperty("string.resource.loader.repository.static", "false");
+		engine.init();
+	}
 
-                message.setSubject(request.getSubject());
+	public void sendMail(final EmailRequest request) {
+		prepareMailConfiguration();
 
-                VelocityContext context = new VelocityContext();
-                replaceMessageTokens(context, eachContact);
-                Template template = engine.getTemplate("template");
-                StringWriter writer = new StringWriter();
-                template.merge(context, writer);
+		StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
+		repo.putStringResource("template", request.getContent());
 
-                Multipart multipart = new MimeMultipart();
+		try {
+			for (final Contact eachContact : request.getSelectedContacts()) {
+				MimeMessage message = javaMailService.createMimeMessage();
+				setAuthenticator();
+				message.setFrom(fromEmailAddress);
+				message.setReplyTo(InternetAddress.parse(configurationService.getByName("mail.reply.to").getStrValue()));
+				message.setRecipients(RecipientType.TO, InternetAddress.parse(eachContact.getEmail()));
 
-                BodyPart messageBodyPart = new MimeBodyPart();
-                messageBodyPart.setContent(writer.toString(), TEXT_HTML);
+				message.setSubject(request.getSubject());
 
-                multipart.addBodyPart(messageBodyPart);
+				StringWriter writer = processTemplate(eachContact);
 
-                for (String attachment : request.getAttachments()) {
-                    messageBodyPart = new MimeBodyPart();
-                    DataSource source = new FileDataSource(attachment);
-                    messageBodyPart.setDataHandler(new DataHandler(source));
-                    messageBodyPart.setFileName(source.getName());
-                    multipart.addBodyPart(messageBodyPart);
-                }
-                message.setContent(multipart);
-                javaMailService.send(message);
-            }
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-    }
+				Multipart multipart = new MimeMultipart();
 
-    private void replaceMessageTokens(VelocityContext context, Contact eachContact) {
-        context.put("name", eachContact.getName());
-    }
+				BodyPart messageBodyPart = new MimeBodyPart();
+				messageBodyPart.setContent(writer.toString(), TEXT_HTML);
 
-    private void addRecipients(Contact contact, MimeMessage message, Message.RecipientType mimeRecipientType, String recipientType) throws MessagingException, AddressException {
-        String recipient = contact.getEmail();
-        if (StringUtils.isNotBlank(recipient)) {
-            message.setRecipients(mimeRecipientType, InternetAddress.parse(recipient));
-        }
-    }
+				multipart.addBodyPart(messageBodyPart);
+
+				for (String attachment : request.getAttachments()) {
+					messageBodyPart = new MimeBodyPart();
+					DataSource source = new FileDataSource(attachment);
+					messageBodyPart.setDataHandler(new DataHandler(source));
+					messageBodyPart.setFileName(source.getName());
+					multipart.addBodyPart(messageBodyPart);
+				}
+				message.setContent(multipart);
+				javaMailService.send(message);
+			}
+		} catch (Exception e) {
+			LOGGER.error(e.getMessage(), e);
+		}
+	}
+
+	public StringWriter processTemplate(final Contact eachContact) {
+		VelocityContext context = new VelocityContext();
+		replaceMessageTokens(context, eachContact);
+		Template template = engine.getTemplate("template");
+		StringWriter writer = new StringWriter();
+		template.merge(context, writer);
+		return writer;
+	}
+
+	public void setAuthenticator() {
+		Session.getDefaultInstance(new Properties(), new javax.mail.Authenticator() {
+			protected PasswordAuthentication getPasswordAuthentication() {
+				return new PasswordAuthentication(configurationService.getByName("mail.user.name").getStrValue(), configurationService.getByName("mail.user.pass").getStrValue());
+			}
+		});
+	}
+
+	private void replaceMessageTokens(VelocityContext context, Contact eachContact) {
+		context.put("name", eachContact.getName());
+	}
+
+	private void prepareMailConfiguration() {
+		fromEmailAddress = configurationService.getByName("mail.message.from.default").getStrValue();
+
+		javaMailService.setHost(configurationService.getByName("mail.smtp.host").getStrValue());
+		javaMailService.setPort(configurationService.getByName("mail.smtp.port").getValue());
+		javaMailService.setUsername(configurationService.getByName("mail.user.name").getStrValue());
+		javaMailService.setPassword(configurationService.getByName("mail.user.pass").getStrValue());
+
+		Properties properties = new Properties();
+		Boolean isSecured = configurationService.getByName("mail.secured").getBoolValue();
+		if (isSecured) {
+			properties.put("mail.transport.protocol", "smtps");
+			properties.put("mail.smtp.socketFactory.port", configurationService.getByName("mail.smtp.port").getValue());
+			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+		} else {
+			properties.put("mail.transport.protocol", "smtp");
+		}
+		properties.setProperty("mail.smtp.auth", configurationService.getByName("mail.auth.required").getBoolValue().toString());
+		properties.setProperty("mail.smtp.starttls.enable", configurationService.getByName("mail.smtp.starttls.enable").getBoolValue().toString());
+		properties.setProperty("mail.smtp.user", configurationService.getByName("mail.user.name").getStrValue());
+		properties.setProperty("mail.smtp.password", configurationService.getByName("mail.user.pass").getStrValue());
+		properties.setProperty("mail.debug", configurationService.getByName("mail.debug").getBoolValue().toString());
+
+		javaMailService.setJavaMailProperties(properties);
+	}
 }

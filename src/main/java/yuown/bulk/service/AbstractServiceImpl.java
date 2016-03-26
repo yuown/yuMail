@@ -25,6 +25,10 @@ public abstract class AbstractServiceImpl<ID extends Serializable, E extends Bas
     public List<E> findAll() {
         return repository().findAll();
     }
+    
+    public List<E> findAll(Boolean enabled) {
+        return repository().findAllByEnabled(enabled);
+    }
 
     public void delete(E entity) {
         repository().delete(entity);
