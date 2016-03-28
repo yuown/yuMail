@@ -1,21 +1,11 @@
 package yuown.bulk.service;
 
 import java.io.StringWriter;
-import java.util.Properties;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
 import javax.annotation.PostConstruct;
-import javax.mail.BodyPart;
-import javax.mail.Message.RecipientType;
-import javax.mail.Multipart;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
 
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -27,31 +17,36 @@ import org.apache.velocity.runtime.resource.util.StringResourceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.stereotype.Service;
 
+import yuown.bulk.config.MailConfigurator;
+import yuown.bulk.entities.Attachment;
 import yuown.bulk.entities.Contact;
+import yuown.bulk.entities.RequestEntry;
+import yuown.bulk.entities.RequestSequence;
 import yuown.bulk.model.EmailRequest;
+import yuown.bulk.pool.SendMailTask;
+import yuown.bulk.repository.RequestEntryRepository;
+import yuown.bulk.repository.RequestSequenceRepository;
 
 @Service
 public class MailSenderHelper {
 
-	@Autowired
-	private JavaMailSenderImpl javaMailService;
-
-	@Autowired
-	private VelocityEngine velocityEngine;
-
-	@Autowired
-	private ConfigurationService configurationService;
-
-	private String fromEmailAddress;
+	private AnnotationConfigApplicationContext ctx;
 
 	private VelocityEngine engine;
 
-	private static final String TEXT_HTML = "text/html; charset=utf-8";
-
 	private static Logger LOGGER = LoggerFactory.getLogger(MailSenderHelper.class);
+
+	@Autowired
+	private SendMailTask asyncMailer;
+
+	@Autowired
+	private RequestSequenceRepository requestSequenceRepository;
+
+	@Autowired
+	private RequestEntryRepository requestEntryRepository;
 
 	@PostConstruct
 	public void init() {
@@ -62,46 +57,50 @@ public class MailSenderHelper {
 		engine.addProperty("string.resource.loader.class", StringResourceLoader.class.getName());
 		engine.addProperty("string.resource.loader.repository.static", "false");
 		engine.init();
+
+		ctx = new AnnotationConfigApplicationContext();
+
+		ctx.register(MailConfigurator.class);
+		ctx.refresh();
 	}
 
-	public void sendMail(final EmailRequest request) {
-		prepareMailConfiguration();
-
+	public void sendMail(EmailRequest request) {
 		StringResourceRepository repo = (StringResourceRepository) engine.getApplicationAttribute(StringResourceLoader.REPOSITORY_NAME_DEFAULT);
 		repo.putStringResource("template", request.getContent());
-
+		RequestSequence seq = new RequestSequence();
+		seq = requestSequenceRepository.save(seq);
 		try {
 			for (final Contact eachContact : request.getSelectedContacts()) {
-				MimeMessage message = javaMailService.createMimeMessage();
-				setAuthenticator();
-				message.setFrom(fromEmailAddress);
-				message.setReplyTo(InternetAddress.parse(configurationService.getByName("mail.reply.to").getStrValue()));
-				message.setRecipients(RecipientType.TO, InternetAddress.parse(eachContact.getEmail()));
-
-				message.setSubject(request.getSubject());
-
 				StringWriter writer = processTemplate(eachContact);
 
-				Multipart multipart = new MimeMultipart();
+				RequestEntry entry = new RequestEntry();
+				entry.setContact(eachContact);
+				entry.setSubject(request.getSubject());
+				entry.setContent(writer.toString());
+				entry.setAttachments(convert(request.getAttachments()));
+				entry.setRequestId(seq.getId());
 
-				BodyPart messageBodyPart = new MimeBodyPart();
-				messageBodyPart.setContent(writer.toString(), TEXT_HTML);
+				SendMailTask task = ctx.getBean(SendMailTask.class);
+				task.setRequestEntry(entry);
 
-				multipart.addBodyPart(messageBodyPart);
-
-				for (String attachment : request.getAttachments()) {
-					messageBodyPart = new MimeBodyPart();
-					DataSource source = new FileDataSource(attachment);
-					messageBodyPart.setDataHandler(new DataHandler(source));
-					messageBodyPart.setFileName(source.getName());
-					multipart.addBodyPart(messageBodyPart);
+				Future<RequestEntry> entryFinished = task.start();
+				if (entryFinished.isDone()) {
+					requestEntryRepository.save(entryFinished.get());
 				}
-				message.setContent(multipart);
-				javaMailService.send(message);
 			}
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 		}
+	}
+
+	private List<Attachment> convert(List<String> attachments) {
+		List<Attachment> atts = new ArrayList<Attachment>();
+		for (String path : attachments) {
+			Attachment att = new Attachment();
+			att.setPath(path);
+			atts.add(att);
+		}
+		return atts;
 	}
 
 	public StringWriter processTemplate(final Contact eachContact) {
@@ -113,41 +112,7 @@ public class MailSenderHelper {
 		return writer;
 	}
 
-	public void setAuthenticator() {
-		Session.getDefaultInstance(new Properties(), new javax.mail.Authenticator() {
-			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(configurationService.getByName("mail.user.name").getStrValue(), configurationService.getByName("mail.user.pass").getStrValue());
-			}
-		});
-	}
-
 	private void replaceMessageTokens(VelocityContext context, Contact eachContact) {
 		context.put("name", eachContact.getName());
-	}
-
-	private void prepareMailConfiguration() {
-		fromEmailAddress = configurationService.getByName("mail.message.from.default").getStrValue();
-
-		javaMailService.setHost(configurationService.getByName("mail.smtp.host").getStrValue());
-		javaMailService.setPort(configurationService.getByName("mail.smtp.port").getValue());
-		javaMailService.setUsername(configurationService.getByName("mail.user.name").getStrValue());
-		javaMailService.setPassword(configurationService.getByName("mail.user.pass").getStrValue());
-
-		Properties properties = new Properties();
-		Boolean isSecured = configurationService.getByName("mail.secured").getBoolValue();
-		if (isSecured) {
-			properties.put("mail.transport.protocol", "smtps");
-			properties.put("mail.smtp.socketFactory.port", configurationService.getByName("mail.smtp.port").getValue());
-			properties.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-		} else {
-			properties.put("mail.transport.protocol", "smtp");
-		}
-		properties.setProperty("mail.smtp.auth", configurationService.getByName("mail.auth.required").getBoolValue().toString());
-		properties.setProperty("mail.smtp.starttls.enable", configurationService.getByName("mail.smtp.starttls.enable").getBoolValue().toString());
-		properties.setProperty("mail.smtp.user", configurationService.getByName("mail.user.name").getStrValue());
-		properties.setProperty("mail.smtp.password", configurationService.getByName("mail.user.pass").getStrValue());
-		properties.setProperty("mail.debug", configurationService.getByName("mail.debug").getBoolValue().toString());
-
-		javaMailService.setJavaMailProperties(properties);
 	}
 }

@@ -1,54 +1,59 @@
 package yuown.bulk.model;
 
-import yuown.bulk.entities.Contact;
-
 import java.io.Serializable;
 import java.util.List;
 
+import javax.persistence.CascadeType;
+import javax.persistence.FetchType;
+import javax.persistence.Lob;
+import javax.persistence.ManyToMany;
+
+import yuown.bulk.entities.Contact;
+
 public class EmailRequest implements Serializable {
 
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -473876435988646341L;
+	private List<Contact> selectedContacts;
 
-    private List<Contact> selectedContacts;
+	private String content;
 
-    private String content;
+	private List<String> attachments;
 
-    private List<String> attachments;
-    
-    private String subject;
+	private String subject;
 
-    public List<Contact> getSelectedContacts() {
-        return selectedContacts;
-    }
+	public EmailRequest() {
+	}
 
-    public void setSelectedContacts(List<Contact> selectedContacts) {
-        this.selectedContacts = selectedContacts;
-    }
+	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+	public List<Contact> getSelectedContacts() {
+		return selectedContacts;
+	}
 
-    public String getContent() {
-        return content;
-    }
+	public void setSelectedContacts(List<Contact> selectedContacts) {
+		this.selectedContacts = selectedContacts;
+	}
 
-    public void setContent(String content) {
-        this.content = content;
-    }
+	@Lob
+	public String getContent() {
+		return content;
+	}
 
-    public List<String> getAttachments() {
-        return attachments;
-    }
+	public void setContent(String content) {
+		this.content = content;
+	}
 
-    public void setAttachments(List<String> attachments) {
-        this.attachments = attachments;
-    }
+	public List<String> getAttachments() {
+		return attachments;
+	}
 
-    public String getSubject() {
-        return subject;
-    }
+	public void setAttachments(List<String> attachments) {
+		this.attachments = attachments;
+	}
 
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
+	public String getSubject() {
+		return subject;
+	}
+
+	public void setSubject(String subject) {
+		this.subject = subject;
+	}
 }
