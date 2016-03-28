@@ -40,7 +40,7 @@ public class SendMailTask {
 
 	private RequestEntry entry;
 
-	private String uid;
+	private static String uid;
 
 	private static Logger LOGGER = LoggerFactory.getLogger(SendMailTask.class);
 

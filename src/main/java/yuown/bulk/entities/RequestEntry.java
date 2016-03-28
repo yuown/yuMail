@@ -28,123 +28,124 @@ import javax.persistence.UniqueConstraint;
 })
 public class RequestEntry extends BaseEntity<Integer> {
 
-	private String name;
+    private String name;
 
-	private String content;
+    private String content;
 
-	private String subject;
+    private String subject;
 
-	private Contact contact;
+    private Contact contact;
 
-	private String message;
+    private String message;
 
-	private String status;
+    private String status;
 
-	private Integer requestId;
+    private Integer requestId;
 
-	private List<Attachment> attachments;
+    private List<Attachment> attachments;
 
-	@Override
-	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO)
-	public Integer getId() {
-		return id;
-	}
+    @Override
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    public Integer getId() {
+        return id;
+    }
 
-	@Override
-	public void setId(Integer id) {
-		this.id = id;
-	}
+    @Override
+    public void setId(Integer id) {
+        this.id = id;
+    }
 
-	public String getName() {
-		return name;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getSubject() {
-		return subject;
-	}
+    public String getSubject() {
+        return subject;
+    }
 
-	public void setSubject(String subject) {
-		this.subject = subject;
-	}
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
 
-	@Lob
-	public String getContent() {
-		return content;
-	}
+    @Lob
+    public String getContent() {
+        return content;
+    }
 
-	public void setContent(String content) {
-		this.content = content;
-	}
+    public void setContent(String content) {
+        this.content = content;
+    }
 
-	@ManyToOne
-	public Contact getContact() {
-		return contact;
-	}
+    @ManyToOne
+    public Contact getContact() {
+        return contact;
+    }
 
-	public void setContact(Contact contact) {
-		this.contact = contact;
-	}
+    public void setContact(Contact contact) {
+        this.contact = contact;
+    }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((id == null) ? 0 : id.hashCode());
-		return result;
-	}
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((id == null) ? 0 : id.hashCode());
+        return result;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		RequestEntry other = (RequestEntry) obj;
-		if (id == null) {
-			if (other.id != null)
-				return false;
-		} else if (!id.equals(other.id))
-			return false;
-		return true;
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        RequestEntry other = (RequestEntry) obj;
+        if (id == null) {
+            if (other.id != null)
+                return false;
+        } else if (!id.equals(other.id))
+            return false;
+        return true;
+    }
 
-	public void setAttachments(List<Attachment> attachments) {
-		this.attachments = attachments;
-	}
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
+    }
 
-	@ManyToMany
-	public List<Attachment> getAttachments() {
-		return attachments;
-	}
+    @ManyToMany
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
 
-	public String getMessage() {
-		return message;
-	}
+    @Lob
+    public String getMessage() {
+        return message;
+    }
 
-	public void setMessage(String message) {
-		this.message = message;
-	}
+    public void setMessage(String message) {
+        this.message = message;
+    }
 
-	public String getStatus() {
-		return status;
-	}
+    public String getStatus() {
+        return status;
+    }
 
-	public void setStatus(String status) {
-		this.status = status;
-	}
+    public void setStatus(String status) {
+        this.status = status;
+    }
 
-	public Integer getRequestId() {
-		return requestId;
-	}
+    public Integer getRequestId() {
+        return requestId;
+    }
 
-	public void setRequestId(Integer requestId) {
-		this.requestId = requestId;
-	}
+    public void setRequestId(Integer requestId) {
+        this.requestId = requestId;
+    }
 }

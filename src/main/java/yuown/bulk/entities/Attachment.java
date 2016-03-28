@@ -14,11 +14,14 @@ import javax.persistence.UniqueConstraint;
 @Table(name = "attachments", uniqueConstraints = @UniqueConstraint(columnNames = { "id" }))
 @AttributeOverrides(value = {
         @AttributeOverride(name = "id", column = @Column(name = "id", insertable = false, updatable = false)),
+        @AttributeOverride(name = "name", column = @Column(name = "name")),
         @AttributeOverride(name = "path", column = @Column(name = "path"))
 })
 public class Attachment extends BaseEntity<Integer> {
 
     private String path;
+    
+    private String name;
     
     @Override
     @Id
@@ -30,6 +33,14 @@ public class Attachment extends BaseEntity<Integer> {
     @Override
     public void setId(Integer id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getPath() {
