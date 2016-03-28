@@ -2,7 +2,7 @@ package yuown.bulk.pool;
 
 import java.util.Properties;
 import java.util.UUID;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import javax.activation.DataHandler;
 import javax.activation.DataSource;
@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
 import yuown.bulk.entities.Attachment;
@@ -78,7 +77,7 @@ public class SendMailTask {
 	}
 
 	@Async
-	public Future<RequestEntry> start() {
+	public CompletableFuture<RequestEntry> start() {
 		prepareMailConfiguration();
 		setAuthenticator();
 		try {
@@ -115,7 +114,7 @@ public class SendMailTask {
 			entry.setStatus(MailStatus.FAILED.toString());
 			e.printStackTrace();
 		}
-		return new AsyncResult<RequestEntry>(entry);
+		return CompletableFuture.completedFuture(entry);
 	}
 
 	public void setAuthenticator() {

@@ -3,7 +3,7 @@ package yuown.bulk.service;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Future;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.PostConstruct;
 
@@ -83,10 +83,13 @@ public class MailSenderHelper {
 				SendMailTask task = ctx.getBean(SendMailTask.class);
 				task.setRequestEntry(entry);
 
-				Future<RequestEntry> entryFinished = task.start();
-				if (entryFinished.isDone()) {
-					requestEntryRepository.save(entryFinished.get());
-				}
+				CompletableFuture<RequestEntry> entryFinished = task.start();
+				entryFinished.thenRun(new Runnable() {
+					@Override
+					public void run() {
+						requestEntryRepository.save(entry);
+					}
+				});
 			}
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
