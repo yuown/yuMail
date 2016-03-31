@@ -11,7 +11,7 @@ import java.util.Set;
 @Repository
 public interface RequestEntryRepository extends BaseRepository<RequestEntry, Integer> {
 
-    @Query("select distinct R.requestId from RequestEntry R")
+    @Query("select distinct R.requestId from RequestEntry R order by R.requestId desc")
     public Set<Integer> findAllRequestId();
 
     public List<RequestEntry> findAllByRequestId(Integer id);

@@ -1,5 +1,6 @@
 package yuown.bulk.pool;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -17,8 +18,6 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.scheduling.annotation.Async;
@@ -38,15 +37,13 @@ public class SendMailTask {
 
 	private static final String TEXT_HTML = "text/html; charset=utf-8";
 
-	private RequestEntry entry;
+	private List<RequestEntry> entries;
 
 	private static String uid;
 
-	private static Logger LOGGER = LoggerFactory.getLogger(SendMailTask.class);
-
 	public SendMailTask() {
 		uid = UUID.randomUUID().toString();
-		LOGGER.debug("{} - SendMailTask Created", uid);
+		System.out.println("SendMailTask Created - " + uid);
 	}
 
 	private void prepareMailConfiguration() {
@@ -73,15 +70,14 @@ public class SendMailTask {
 		properties.setProperty("mail.debug", System.getProperty("mail.debug"));
 
 		javaMailService.setJavaMailProperties(properties);
-		LOGGER.debug("{} - Settings Configured to Send Mail", uid);
+		System.out.println("Settings Configured to Send Mail - " + uid);
 	}
 
-	@Async
-	public CompletableFuture<RequestEntry> start() {
+	private void start(RequestEntry entry) {
 		prepareMailConfiguration();
 		setAuthenticator();
 		try {
-			LOGGER.debug("{} - Creating Message", uid);
+			System.out.println("Creating Message - " + uid);
 			entry.setStatus(MailStatus.STARTED.toString());
 			MimeMessage message = javaMailService.createMimeMessage();
 			message.setFrom(fromEmailAddress);
@@ -106,15 +102,14 @@ public class SendMailTask {
 			}
 			message.setContent(multipart);
 			javaMailService.send(message);
-			LOGGER.debug("{} - Message Successfully Sent", uid);
+			System.out.println("Message Successfully Sent - " + uid);
 			entry.setStatus(MailStatus.SUCCESS.toString());
 		} catch (Exception e) {
-			LOGGER.debug("{} - Message Sent Failed", uid);
+			System.out.println("Message Sent Failed - " + uid);
 			entry.setMessage(e.getMessage());
 			entry.setStatus(MailStatus.FAILED.toString());
 			e.printStackTrace();
 		}
-		return CompletableFuture.completedFuture(entry);
 	}
 
 	public void setAuthenticator() {
@@ -125,7 +120,15 @@ public class SendMailTask {
 		});
 	}
 
-	public void setRequestEntry(RequestEntry entry) {
-		this.entry = entry;
+	public void setData(List<RequestEntry> entries) {
+		this.entries = entries;
+	}
+
+	@Async
+	public CompletableFuture<List<RequestEntry>> startBulk() {
+		for (RequestEntry entry : entries) {
+			start(entry);
+		}
+		return CompletableFuture.completedFuture(entries);
 	}
 }
