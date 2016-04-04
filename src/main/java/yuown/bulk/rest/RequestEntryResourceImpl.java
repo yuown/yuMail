@@ -44,4 +44,9 @@ public class RequestEntryResourceImpl extends AbstractResourceImpl<Integer, Requ
     public void deleteStatusByRequest(@PathVariable("id") Integer id) {
         requestEntryService.deleteStatusByRequest(id);
     }
+    
+    @RequestMapping(method = RequestMethod.GET, value = "/request/retry/{id}")
+    public void retryByRequestId(@PathVariable("id") Integer id) {
+        requestEntryService.retryByRequestId(id);
+    }
 }

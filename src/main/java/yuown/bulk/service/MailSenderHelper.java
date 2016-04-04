@@ -89,7 +89,6 @@ public class MailSenderHelper {
 				}
 			}
 			List<RequestEntry> entries = new ArrayList<RequestEntry>();
-			SendMailTask task = ctx.getBean(SendMailTask.class);
 			for (final Contact eachContact : request.getSelectedContacts()) {
 				StringWriter writer = processTemplate(eachContact);
 
@@ -101,31 +100,26 @@ public class MailSenderHelper {
 				entry.setRequestId(seq.getId());
 
 				entries.add(entry);
-
-				// final CompletableFuture<RequestEntry> entryFinished =
-				// task.start();
-				// entryFinished.thenRun(new Runnable() {
-				// @Override
-				// public void run() {
-				// attachmentRepository.save(entry.getAttachments());
-				// requestEntryRepository.save(entry);
-				// }
-				// });
 			}
-			task.setData(entries);
-			final CompletableFuture<List<RequestEntry>> entryFinished = task.startBulk();
-			entryFinished.thenRun(new Runnable() {
-				@Override
-				public void run() {
-					for (RequestEntry requestEntry : entries) {
-						attachmentRepository.save(requestEntry.getAttachments());
-						requestEntryRepository.save(requestEntry);
-					}
-				}
-			});
+			submitAsync(entries);
 		} catch (Exception e) {
 			LOGGER.error(e.getMessage(), e);
 		}
+	}
+
+	public void submitAsync(List<RequestEntry> entries) {
+		SendMailTask task = ctx.getBean(SendMailTask.class);
+		task.setData(entries);
+		final CompletableFuture<List<RequestEntry>> entryFinished = task.startBulk();
+		entryFinished.thenRun(new Runnable() {
+			@Override
+			public void run() {
+				for (RequestEntry requestEntry : entries) {
+					attachmentRepository.save(requestEntry.getAttachments());
+					requestEntryRepository.save(requestEntry);
+				}
+			}
+		});
 	}
 
 	private List<Attachment> convert(List<String> attachments) {

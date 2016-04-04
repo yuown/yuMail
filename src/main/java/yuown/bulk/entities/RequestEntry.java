@@ -6,6 +6,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -119,7 +120,7 @@ public class RequestEntry extends BaseEntity<Integer> {
         this.attachments = attachments;
     }
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     public List<Attachment> getAttachments() {
         return attachments;
     }
